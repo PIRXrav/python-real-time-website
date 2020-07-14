@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  	<head>
+        <title>pyconsole</title>
+        <!--bootstrap-->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  	</head>
+	<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-8">
+      	<h1>PyConsole</h1>
+      	<pre class="message_holder">>>> Hello world!</pre>
+        <form action="" method="POST">
+           <input type="text" class="rawdata" placeholder="rawdata"/>
+        </form>
+      </div>
+      <div class="col-sm-4">
+        <div class=connected>
+        	<h3>Connected</h3>
+            <ul class="list-group" id="connected">
+                  <li class="list-group-item">First item</li>
+                  <li class="list-group-item">Second item</li>
+                  <li class="list-group-item">Third item</li>
+                </ul>
+  			</div>
+      </div>
+    </div>
+  </div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+    <script type="text/javascript">
+      var socket = io.connect('http://' + document.domain + ':' + location.port);
+      socket.on( 'connect', function() {
+        socket.emit( 'my event', { data: 'User Connected' } )
+      })
+      socket.on( 'data', function( data ) {
+        console.log(data)
+        if( typeof data.type !== 'undefined' ) {
+          switch(data.type){
+            case 'msg':
+              $('pre.message_holder').append('>>> '+data.user+data.msg+'\n')
+            break;
+            case 'connected':
+              console.log(data)
+              raw = ''
+              data.connected.forEach(function (item) {
+                raw += '<li class="list-group-item">'+item+'</li>'
+              });
+              document.getElementById("connected").innerHTML = raw
+            break;
+          }
+        }
+      })
+      var form = $( 'form' ).on( 'submit', function( e ) {
+        e.preventDefault()
+        socket.emit( 'my event', { rawdata : $( 'input.rawdata' ).val() } )
+        $( 'input.rawdata' ).val( '' ).focus()
+      })
+    </script>
+  </body>
+</html>

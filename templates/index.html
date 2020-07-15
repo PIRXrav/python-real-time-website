@@ -20,7 +20,7 @@
       </div>
       <div class="col-sm-4">
         <h3>Connected</h3>
-        <table class="table table-bordered table-sm">
+        <table class="table table-sm">
           <thead>
             <tr>
               <th>user</th>
@@ -44,7 +44,7 @@
     <script type="text/javascript">
       var socket = io.connect('http://' + document.domain + ':' + location.port);
       socket.on( 'connect', function() {
-        // socket.emit( 'my event', { data: 'User Connected' } )
+        //socket.emit( 'my event', { data: 'User Connected' } )
       })
       socket.on( 'data', function( data ) {
         console.log(data)
@@ -56,9 +56,14 @@
             case 'connected':
               console.log(data)
               document.getElementById("connected").innerHTML = ''
-              for (const [user, id] of Object.entries(data.connected)) {
-                console.log(`${user}: ${id}`);
-                html = '<tr><td>'+user+'</td><td>'+id+'</td></tr>'
+              for (const [user, ids] of Object.entries(data.connected)) {
+                //console.log(`${user}: ${id}`);
+                idlist = '<ul class="list-group list-group-flush">'
+                ids.forEach(function (id) {
+                  idlist += '<li class="list-group-item list-group-item-success">'+id+'</li>'
+                });
+                idlist += '</ul>'
+                html = '<tr><td>'+user+'</td><td>'+idlist+'</td></tr>'
                 document.getElementById("connected").innerHTML += html
               }
             break;

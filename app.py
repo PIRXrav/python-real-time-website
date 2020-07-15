@@ -6,13 +6,15 @@ from flask_socketio import SocketIO
 from flask import Flask, render_template, request, abort, redirect, url_for
 from flask_login import LoginManager, login_user, current_user, UserMixin, login_required
 
+from collections import defaultdict
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 login = LoginManager(app)  # Login
 login.login_view = 'loginform'
 
-connected_dict = {}
+connected_dict = defaultdict(list)
 
 @login.user_loader
 def user_loader(id):
@@ -52,18 +54,18 @@ def send_msg(user, msg):
 
 @socketio.on('connect')
 def connect():
-    # emit('welcome', {'username': current_user.id})
-    connected_dict[current_user.id] = request.sid # ling username => socket ID
+    # linq username => socket ID
+    print(f'socket connected {current_user.id} => {request.sid}')
+    connected_dict[current_user.id].append(request.sid)
     send_msg("@console", f" + {current_user.id}")
     send_connected(connected_dict)
-    print(f'socket connected {current_user.id} => {request.sid}')
 
 @socketio.on('disconnect')
 def disconnect():
-    connected_dict[current_user.id] = None
+    print(f'socket disconnected {current_user.id} => None')
+    connected_dict[current_user.id].remove(request.sid)
     send_msg("@console", f" - {current_user.id}")
     send_connected(connected_dict)
-    print(f'socket disconnected {current_user.id} => None')
 
 @socketio.on('my event')
 def handle_my_custom_event(data, methods=['GET', 'POST']):

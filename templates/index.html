@@ -19,14 +19,21 @@
         </form>
       </div>
       <div class="col-sm-4">
-        <div class=connected>
-        	<h3>Connected</h3>
-            <ul class="list-group" id="connected">
-                  <li class="list-group-item">First item</li>
-                  <li class="list-group-item">Second item</li>
-                  <li class="list-group-item">Third item</li>
-                </ul>
-  			</div>
+        <h3>Connected</h3>
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>user</th>
+              <th>id</th>
+            </tr>
+          </thead>
+          <tbody id="connected">
+            <tr>
+              <td>titi</td>
+              <td>12345</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -37,7 +44,7 @@
     <script type="text/javascript">
       var socket = io.connect('http://' + document.domain + ':' + location.port);
       socket.on( 'connect', function() {
-        socket.emit( 'my event', { data: 'User Connected' } )
+        // socket.emit( 'my event', { data: 'User Connected' } )
       })
       socket.on( 'data', function( data ) {
         console.log(data)
@@ -48,11 +55,12 @@
             break;
             case 'connected':
               console.log(data)
-              raw = ''
-              data.connected.forEach(function (item) {
-                raw += '<li class="list-group-item">'+item+'</li>'
-              });
-              document.getElementById("connected").innerHTML = raw
+              document.getElementById("connected").innerHTML = ''
+              for (const [user, id] of Object.entries(data.connected)) {
+                console.log(`${user}: ${id}`);
+                html = '<tr><td>'+user+'</td><td>'+id+'</td></tr>'
+                document.getElementById("connected").innerHTML += html
+              }
             break;
           }
         }

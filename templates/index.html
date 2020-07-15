@@ -15,7 +15,7 @@
       	<h1>PyConsole</h1>
       	<pre class="message_holder">>>> Hello world!</pre>
         <form action="" method="POST">
-           <input type="text" class="rawdata" placeholder="rawdata"/>
+          <input type="text" class="form-control" id="usertext" placeholder="msg"/>
         </form>
       </div>
       <div class="col-sm-4">
@@ -72,8 +72,9 @@
       })
       var form = $( 'form' ).on( 'submit', function( e ) {
         e.preventDefault()
-        socket.emit( 'my event', { rawdata : $( 'input.rawdata' ).val() } )
-        $( 'input.rawdata' ).val( '' ).focus()
+        myinput = $( '#usertext' )
+        socket.emit( 'my event', { rawdata : myinput.val() } )
+        myinput.val( '' ).focus()
       })
     </script>
   </body>

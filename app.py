@@ -64,6 +64,8 @@ def connect():
 def disconnect():
     print(f'socket disconnected {current_user.id} => None')
     connected_dict[current_user.id].remove(request.sid)
+    if connected_dict[current_user.id] == []:
+        connected_dict.pop(current_user.id)
     send_msg("@console", f" - {current_user.id}")
     send_connected(connected_dict)
 

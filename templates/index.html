@@ -51,7 +51,7 @@
         if( typeof data.type !== 'undefined' ) {
           switch(data.type){
             case 'msg':
-              $('pre.message_holder').append('>>> '+data.user+data.msg+'\n')
+              $('pre.message_holder').append('>>> '+data.msg+'\n')
             break;
             case 'connected':
               console.log(data)

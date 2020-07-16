@@ -22,37 +22,37 @@ class Client(cmd.Cmd):
     def do_msg(self, inp):
         inp = inp.split(' ')
         clientname = inp.pop(0)
-        print(clientname)
         client = clients[clientname]
         if client:
             msg = f"[{self.username} => {client.username}] {' '.join(inp)}"
             self.send_msg(msg, [client])
-            return msg  # sender recv msg
+            self.stdout.write(msg) # sender recv msg
         else:
-            return "user not connected"
+            self.stdout.write("user not connected")
 
     def do_add(self, inp):
-        return f"Adding {'+'.join(inp.split(' '))}={sum(map(int, inp.split(' ')))}"
-
-    def do_help(self, inp):
-        return "no help"
+        self.stdout.write(f"Adding {'+'.join(inp.split(' '))}={sum(map(int, inp.split(' ')))}")
 
     def default(self, line):
-        return "command not found: " + line
+        self.stdout.write("command not found: " + line)
 
     def process(self, inputstr):
         try:
             if inputstr[0] == '/': # process cmd
-                self.send_msg(self.onecmd(inputstr[1:]), [self])
+                self.onecmd(inputstr[1:])
+                self.flush()
             else:  # send msg broadcast
                 self.send_msg(f'[{self.username}] ' + inputstr)
         except:
             return ''
 
     def __init__(self, username):
+        super(Client, self).__init__(stdout=self) # use self write & flush
         self.ids = []
         self.id_connected = False
         self.username = username
+
+        self.buffered_data = ''
 
     def link(self, socketid):
         assert not socketid in self.ids
@@ -80,6 +80,15 @@ class Client(cmd.Cmd):
                "user": "",
                "msg": msg}
         self.send(req, dstclients)
+
+    def write(self, data):
+        """ IO write """
+        self.buffered_data += data
+
+    def flush(self):
+        """ IO flush """
+        self.send_msg(self.buffered_data, [self])
+        self.buffered_data = ''
 
 class Clients:
     """ all connected clients """

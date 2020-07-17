@@ -13,7 +13,7 @@
     <div class="row">
       <div class="col-sm-8">
       	<h1>PyConsole</h1>
-      	<pre class="message_holder">>>> Hello world!</pre>
+      	<pre class="text-break"><code id="console"></code></pre>
         <form action="" method="POST">
           <input type="text" class="form-control" id="usertext" placeholder="msg"/>
         </form>
@@ -46,12 +46,15 @@
       socket.on( 'connect', function() {
         //socket.emit( 'my event', { data: 'User Connected' } )
       })
+      socket.on( 'my_ping', function(rawdata) {
+        socket.emit('my_pong', {"rawdata": rawdata})  
+      })
       socket.on( 'data', function( data ) {
         console.log(data)
         if( typeof data.type !== 'undefined' ) {
           switch(data.type){
             case 'msg':
-              $('pre.message_holder').append('>>> '+data.msg+'\n')
+              document.getElementById("console").append('>>> '+data.msg+'\n')
             break;
             case 'connected':
               console.log(data)

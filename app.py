@@ -6,6 +6,8 @@ from flask_socketio import SocketIO
 from flask import Flask, render_template, request, abort, redirect, url_for
 from flask_login import LoginManager, login_user, current_user, UserMixin, login_required
 
+import time
+
 from collections import defaultdict
 
 app = Flask(__name__)
@@ -33,10 +35,14 @@ class Client(cmd.Cmd):
     def do_add(self, inp):
         self.stdout.write(f"Adding {'+'.join(inp.split(' '))}={sum(map(int, inp.split(' ')))}")
 
+    def do_ping(self, inp):
+        self.stdout.write(str(self.latency/1e9)+'s')
+
     def default(self, line):
         self.stdout.write("command not found: " + line)
 
     def process(self, inputstr):
+        # process input
         try:
             if inputstr[0] == '/': # process cmd
                 self.onecmd(inputstr[1:])
@@ -44,15 +50,21 @@ class Client(cmd.Cmd):
             else:  # send msg broadcast
                 self.send_msg(f'[{self.username}] ' + inputstr)
         except:
-            return ''
+            pass
+
+        # update user latency
+        ping(self.ids[-1])
+
 
     def __init__(self, username):
-        super(Client, self).__init__(stdout=self) # use self write & flush
         self.ids = []
         self.id_connected = False
         self.username = username
-
+        # own stream
+        super(Client, self).__init__(stdout=self) # use self write & flush
         self.buffered_data = ''
+        # ping
+        self.latency = 0
 
     def link(self, socketid):
         assert not socketid in self.ids
@@ -113,7 +125,8 @@ class Clients:
         return None
 
     def to_json(self):
-        return {user: client.ids for user, client in self.connected_dict.items() }
+        return {user: client.ids
+                for user, client in self.connected_dict.items() }
 
 clients = Clients()
 
@@ -142,10 +155,10 @@ def loginform():
 def index():
     return render_template('index.html') # socketio in it
 
-def send_connected(data):
+def send_connected():
     """ send connected {username:[ids]} """
     req = {"type":  "connected",
-           "connected": data}
+           "connected": clients.to_json()}
     socketio.emit('data', req)
 
 @socketio.on('connect')
@@ -153,22 +166,25 @@ def connect():
     # linq username => socket ID
     print(f'socket connected {current_user.id} => {request.sid}')
     clients.link(current_user.id, request.sid)
-    # send_msg("@console", f" + {current_user.id}")
-    send_connected(clients.to_json())
+    send_connected()
 
 @socketio.on('disconnect')
 def disconnect():
     print(f'socket disconnected {current_user.id} => None')
     clients.unlink(current_user.id, request.sid)
-    # send_msg("@console", f" - {current_user.id}")
-    send_connected(clients.to_json())
+    send_connected()
 
 @socketio.on('my event')
 def handle_my_custom_event(data, methods=('GET', 'POST')):
     print('my event: ' + str(data))
     clients[current_user.id].process(data["rawdata"])
-    # send_msg(str(current_user.id), ": " +str(data["rawdata"]))
 
+def ping(id):
+    socketio.emit('my_ping', str(time.time_ns()), room=id)
+
+@socketio.on('my_pong')
+def handle_pong(data, method=('GET', 'POST')):
+    clients[current_user.id].latency = time.time_ns() - int(data["rawdata"])
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

@@ -5,6 +5,8 @@ test flask_socketio
 from flask_socketio import SocketIO
 from flask import Flask, render_template, request, abort, redirect, url_for
 from flask_login import LoginManager, login_user, current_user, UserMixin, login_required
+from usernames import is_safe_username
+
 
 import time
 
@@ -18,6 +20,7 @@ login.login_view = 'loginform'
 
 
 import cmd
+from ttt import TicTacToe
 
 class Client(cmd.Cmd):
     """ cmd """
@@ -38,8 +41,44 @@ class Client(cmd.Cmd):
     def do_ping(self, inp):
         self.stdout.write(str(self.latency/1e9)+'s')
 
+    def do_ttt(self, inp):
+        """ /ttt <username> <x> <y> """
+        inp = inp.split(' ')
+        try:
+            clientname = inp.pop(0)
+            client = clients[clientname]
+            if not client:
+                self.send_msg("user not connected", [self])
+                return
+            x = int(inp.pop(0))
+            y = int(inp.pop(0))
+            if not (  0 <= x <= 2 and  0 <= x <= 2):
+                self.send_msg("wrong position", [self])
+                return
+        except:
+            self.send_msg("wrong entry", [self])
+
+        # init game
+        if self.ttt is None or self.ttt[1] != client:
+            game = TicTacToe()
+            self.ttt = (game, client)
+            client.ttt = (game, self)
+        else:
+            game = self.ttt[0]
+
+        if game.play(x, y):
+            self.send_msg("\n" + game.__str__(), [client, self])
+            if game.winner is not None:
+                self.send_msg(f"{self.username} won", [client, self])
+                self.ttt = None
+            else:
+                self.send_msg(f"[TTT] do /ttt {self.username} <x> <y>", [client])
+        else:
+            self.send_msg(f"Invalid pos {x} {y} \n" + game.__str__(), [self])
+
+
     def default(self, line):
-        self.stdout.write("command not found: " + line)
+        self.send_msg("command not found: " + line, [self])
 
     def process(self, inputstr):
         # process input
@@ -65,6 +104,8 @@ class Client(cmd.Cmd):
         self.buffered_data = ''
         # ping
         self.latency = 0
+
+        self.ttt = None
 
     def link(self, socketid):
         assert not socketid in self.ids
@@ -144,7 +185,7 @@ def loginform():
         print(request.form)
         username = request.form['username']
         # password = request.form['password']
-        if username is not None:
+        if username is not None and is_safe_username(username):
             login_user(User(username))
             return redirect(request.args.get('next'))
     return render_template('login.html')
